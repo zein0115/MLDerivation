@@ -8,4 +8,4 @@ I'm a 1st year (in 2020 summer) undergraduate student majoring BIM. I sometimes 
 
 ## List
 
-[t-SNE derivation]([https://github.com/zein0115/MLDerivation/tree/master/t-SNE%20gradient%20derivation](https://github.com/zein0115/MLDerivation/tree/master/t-SNE gradient derivation)): derivation of SNE and t-SNE gradient
+[t-SNE derivation](https://github.com/zein0115/MLDerivation/tree/master/t-SNE%20gradient%20derivation): derivation of SNE and t-SNE gradient
