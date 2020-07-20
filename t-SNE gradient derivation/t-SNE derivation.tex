@@ -61,7 +61,7 @@ $$
 To simplify the derivation, we regarding $C$ as the function of $d_{ij}$, $d_{ij}$ as the function of $y_i$. 
 Then, the gradient for $i^{th}$ variable is
 $$
-\frac{\partial{C}}{\partial{y_i}} = \sum_{k\neq l} \frac{\partial{C}}{\partial{d_{kl}}}
+\frac{\partial{C}}{\partial{y_i}} = \sum_{k}\sum_{l} \frac{\partial{C}}{\partial{d_{kl}}}
 \frac{\partial{d_{kl}}}{\partial{y_i}}
 $$
 It could be easily derived that only $\partial d_{ij}/\partial y_i$ and $\partial d_{ji}/\partial y_i$, $i\neq j$, 
@@ -144,7 +144,7 @@ $$
 $$
 Using the same logic in t-SNE
 $$
-\frac{\partial{C}}{\partial{y_i}} = \sum_{k\neq l} \frac{\partial{C}}{\partial{d_{kl}}}
+\frac{\partial{C}}{\partial{y_i}} = \sum_{k}\sum_{l} \frac{\partial{C}}{\partial{d_{kl}}}
 \frac{\partial{d_{kl}}}{\partial{y_i}}
 $$
 It could be easily derived that only $\partial d_{ij}/\partial y_i$ and $\partial d_{ji}/\partial y_i$, $i\neq j$, 
