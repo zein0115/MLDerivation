@@ -1,0 +1,283 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsfonts,amsmath,amssymb}
+\usepackage[none]{hyphenat}
+\usepackage{fancyhdr}
+\usepackage{graphicx}
+\usepackage{float}
+\title{Derivation of SNE Gradient}
+\author{Zein\\GitHub@zein0115}
+\date{July 29, 2020}
+
+\begin{document}
+\maketitle
+
+\section{Requirements}
+Basic knowledge of matrix calculus and multivariable calculus.\\
+Newton's method.
+
+\section{Notations}
+The notations are almost same as article by Aapo Hyvärinen.
+\subsection{Datasets}
+The original dataset $\mathbf{s}$ with dimension $d_s$
+$$
+\mathbf{s} = 
+\left[
+    \begin{matrix}
+        | & | &  \cdots & | \\
+        s^{(1)} & s^{(2)} &  \cdots & s^{(n)}\\
+        | & | &  \cdots & |
+    \end{matrix}
+\right] = 
+\left[
+    \begin{matrix}
+        s_1\\s_2\\\vdots\\s_{d_s}
+    \end{matrix}
+\right]
+\in \mathbb{R}^{d_s\times n}
+$$
+The mixed dataset $\mathbf{x}$ with dimension $d_x$, which is a linear combination of $\mathbf{s}$
+$$
+\mathbf{x} = 
+\left[
+    \begin{matrix}
+        | & | &  \cdots & | \\
+        x^{(1)} & x^{(2)} &  \cdots & x^{(n)}\\
+        | & | &  \cdots & |
+    \end{matrix}
+\right]
+\in \mathbb{R}^{d_x\times n}
+$$
+\subsection{Transforming matrices}
+Since $\mathbf{x}$ is a linear combination of $\mathbf{s}$, assume that 
+$$
+A\mathbf{s} = \mathbf{x}
+$$
+Where
+$$
+    A\in\mathbb{R}^{d_x\times d_s}
+$$
+Assume $W = A^{-1}$ exists, then
+$$
+\mathbf{s} = W\mathbf{x}
+$$
+If we let $w_i\in\mathbb{R}^{d_x}$ be a vector which satisfy
+$$
+W = \left[
+    \begin{matrix}
+        w_1^T\\w_2^T\\\vdots\\w_{d_s}^T
+    \end{matrix}
+\right]
+$$
+Then
+$$
+s_i = w_i^T\mathbf{x}
+$$
+Alternatively, if we just use $w^T$ to express one row of $W$, then
+$$
+y = w^T\mathbf{x}
+$$
+Implies $y=s_i$ for some $i$.
+\subsection{Preprocessing}
+Before doing FastICA, dataset $\mathbf{x}$ need to be centerning and whitening to simplify the calculation
+$$
+\begin{aligned}
+    &\mathbf{x} = \mathbf{x} - E[\mathbf{x}]\\
+    &\tilde{\mathbf{x}} = ED^{-1/2}E^T\mathbf{x}
+\end{aligned}
+$$
+Where $E$ and $D$ are generate by eigonvalue decomposition of the covariance matrix, $D^{-1/2}=\sqrt{D^{-1}}$
+$$
+E[\mathbf{x}\mathbf{x}^T] = EDE^T
+$$
+After centerning and whitening ($\mathbf{x}$ is used to denote $\tilde{\mathbf{x}}z$)
+$$
+\begin{aligned}
+    &E[\mathbf{x}] = 0\\
+    &E[\mathbf{x}\mathbf{x}^T] = I
+\end{aligned}
+$$
+\subsection{Optimization}
+The goal of FastICA for one unit is to find a vector $w$ that maximize the nongaussianity of $w^Tx$, where
+Nongaussianity is a measurement of independence. \\
+Nongaussianity is measured by the approximation of negentropy $J(w^T\mathbf{x})$. 
+More negentropy, more independence.
+$$
+J(w^T\mathbf{x}) \propto \{E[G(w^T\mathbf{x})]-E[G(\nu)]\}^2
+$$
+Where $\nu$ is a Gaussian variable of zero mean and unit variance, while $G$ is a nonquadratic function.
+For example
+$$
+G_1(u)=\frac{1}{a_1} \log\cosh a_1u, G_2(u)=-\exp(-u^2/2)
+$$
+\subsection{Special note}
+I am going to introduce a matrix product rule called "$*$". Which is same as ".*" in MATLAB and "*" in Numpy
+for matrix calculation, namely, element product. Following are some examples
+$$
+\left[
+    \begin{matrix}
+        a \\ b \\ c
+    \end{matrix}
+    \right]
+    *
+    \left[
+        \begin{matrix}
+            d \\ e \\ f
+        \end{matrix}
+        \right]
+        =
+    \left[
+        \begin{matrix}
+            ad \\ be \\ cf
+        \end{matrix}
+    \right],
+\left[
+    \begin{matrix}
+        a \\ b \\ c
+    \end{matrix}
+    \right]
+    *
+    \left[
+        \begin{matrix}
+            d & g\\ 
+            e & h\\ 
+            f & i
+        \end{matrix}
+        \right]
+        =
+        \left[
+            \begin{matrix}
+                ad & ag\\ 
+                be & bh\\ 
+                cf & ci
+            \end{matrix}
+            \right]
+$$
+$$
+\left[
+    \begin{matrix}
+        a & b & c
+    \end{matrix}
+\right] * 
+\left[
+    \begin{matrix}
+        d & e & f\\
+        g & h & i
+    \end{matrix}
+\right] = 
+\left[
+    \begin{matrix}
+        ad & be & cf\\
+        ag & bh & ci
+    \end{matrix}
+\right]
+$$
+Intuitively, $(A*B)^T = A^T*B^T$.
+
+\section{Derivation of FastICA for one unit}
+To maximize $J(w^T\mathbf{x})$, we need to find the optima of $E[G(w^T\mathbf{x})]$. \\
+To simplify the calculation, let $\|w\|=1$, i.e., $w^Tw=1$.\\\\
+Then our goal is to find the $w$ that maximize $E[G(w^T\mathbf{x})]$ constrained by $\|w\|=1$, 
+according to Kuhn-Tucker conditions, we need to find $w$ satisfy 
+\begin{equation}
+    \frac{\partial E[G(w^T\mathbf{x})]}{\partial w} = \lambda\frac{\partial w^Tw}{\partial w}
+\end{equation}
+Let $g=G'$ and $\beta = 2\lambda$, where $\lambda$ is Lagrange multiplier. 
+The left hand side equals to
+$$
+\begin{aligned}
+    \frac{\partial E[G(w^T\mathbf{x})]}{\partial w} &= 
+    \frac{\partial}{\partial w}\frac{1}{n}\sum_{i=1}^nG(w^Tx^{(i)})\\
+    &=\frac{1}{n}\sum_{i=1}^n \frac{\partial}{\partial w} G(w^Tx^{(i)})\\
+    &=\frac{1}{n}\sum_{i=1}^n \frac{\partial w^Tx^{(i)}}{\partial w} \frac{\partial}{\partial w^Tx^{(i)}} G(w^Tx^{(i)})\\
+    &= \frac{1}{n}\sum_{i=1}^n x^{(i)T}g(w^Tx^{(i)})\\
+    &= \left[ \frac{1}{n}\sum_{i=1}^n x^{(i)}g(w^Tx^{(i)}) \right]^T\\
+    &=E\left[
+        \mathbf{x} * g(w^T\mathbf{x})
+    \right]^T\\
+\end{aligned}
+$$
+The right hand side is
+$$
+\lambda\frac{\partial w^Tw}{\partial w} = 2\lambda w^T = \beta w^T
+$$
+Thus the euqation (1) could be rewrite to 
+\begin{equation}
+    E\left[
+        \mathbf{x} * g(w^T\mathbf{x})
+    \right]^T - \beta w^T = 0
+\end{equation}
+Equivalent to 
+\begin{equation}
+    E\left[
+        \mathbf{x} * g(w^T\mathbf{x})
+    \right] - \beta w = 0
+\end{equation}
+FastICA uses Newton's method to solve equation (3). Newton's method is a numerical method 
+to find root of a nonlinear equation. For a nonlinear equation $F(x)=0$, do iteration
+$$
+x = x - \frac{F(x)}{F'(x)}
+$$
+If $F$ is a vector-valued multivariable function and $x$ is a vector, do
+$$
+x = x - J_F^{-1}(x)F(x)
+$$
+Where $J_F(x) = F'(x)$ is Jacobian matrix while $J_F^{-1}(x)$ is the inverse.\\\\
+Consider $F(w) = E\left[\mathbf{x} * g(w^T\mathbf{x})\right] - \beta w$, then we are going to solve
+\begin{equation}
+    F(w) = 0
+\end{equation}
+First find the Jacobian matrix
+$$
+\begin{aligned}
+    J_F(w) &= \frac{\partial F(w)}{\partial w}\\
+    &= \frac{\partial }{\partial w}E\left[\mathbf{x} * g(w^T\mathbf{x})\right] - 
+    \frac{\partial }{\partial w}\beta w\\
+    &= \frac{\partial }{\partial w}\frac{1}{n}\sum_{i=1}^n x^{(i)}g(w^Tx^{(i)}) - \beta I\\
+    &= \frac{1}{n}\sum_{i=1}^n x^{(i)}x^{(i)T}g'(w^Tx^{(i)}) - \beta I
+\end{aligned}
+$$
+To simplify the calculation, we assume that $x^{(i)}x^{(i)T}$ and $g'(w^Tx^{(i)})$ are independent variables, 
+then the approximation is given as
+$$
+\begin{aligned}
+    J_F(w) &= \frac{1}{n}\sum_{i=1}^n x^{(i)}x^{(i)T}g'(w^Tx^{(i)}) - \beta I\\
+    &\approx \frac{1}{n}\sum_{i=1}^n x^{(i)}x^{(i)T} \frac{1}{n}\sum_{i=1}^n g'(w^Tx^{(i)}) - \beta I\\
+    &= \frac{1}{n}\mathbf{x}\mathbf{x}^T\frac{1}{n}\sum_{i=1}^n g'(w^Tx^{(i)}) - \beta I\\
+    &= E[\mathbf{x}\mathbf{x}^T]E[g'(w^Tx^{(i)})] - \beta I\\
+    &= IE[g'(w^Tx^{(i)})] - \beta I\\
+    &= I\left\{E[g'(w^Tx^{(i)})]-\beta\right\}
+\end{aligned}
+$$
+Then $J_F(w)$ is a diagonal matrix, the inverse could be simply find as $J_F^{-1}=I\left\{E[g'(w^Tx^{(i)})]-\beta\right\}^{-1}$.
+Apply $J_F^{-1}(w)$ to the iteration euqation $w = w - J_F^{-1}(w)F(w)$
+$$
+\begin{aligned}
+    w &= w - J_F^{-1}F(w)\\
+    &=w - I\frac{E\left[\mathbf{x} * g(w^T\mathbf{x})\right] - \beta w}
+    {E[g'(w^Tx^{(i)})]-\beta}\\
+    &= \frac{1}{E[g'(w^Tx^{(i)})]-\beta} \left\{ 
+        E[g'(w^Tx^{(i)})]w - \beta w - E[x * g(w^Tx^{(i)})] + \beta w
+    \right\}\\
+    &= \frac{1}{E[g'(w^Tx^{(i)})]-\beta}\left\{ 
+        E[g'(w^Tx^{(i)})]w- E[x * g(w^Tx^{(i)})]
+    \right\}
+\end{aligned}
+$$
+Since $E[g'(w^Tx^{(i)})]-\beta$ is a scaler and $w$ is constrained as $\|w\|=1$, 
+$E[g'(w^Tx^{(i)})]-\beta$ could be ignored by applying
+\begin{align}
+    w &= E[g'(w^Tx^{(i)})]w- E[x * g(w^Tx^{(i)})]\\
+    w &= \frac{w}{\|w\|}
+\end{align}
+in each iteration, which is a basic form of FastICA. \\\\
+I would not post the derivation of FastICA for several unit here, since the derivation in the original
+article is comprehensive enough. 
+
+\renewcommand\refname{Reference}
+\nocite{1}
+\nocite{*} 
+\bibliographystyle{plain}
+\bibliography{reference.bib}
+
+\end{document}
